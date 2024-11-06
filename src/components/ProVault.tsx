@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from "react";
-// @ts-ignore
 import { ChainId } from "@factordao/sdk";
-// @ts-ignore
 import { StudioProVaultStats, Vault } from "@factordao/sdk-studio";
-// @ts-ignore
 import { useAccount } from "wagmi";
-// @ts-ignore
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import ProWithdrawModal from "./modals/ProWithdrawModal";
 import ProDepositModal from "./modals/ProDepositModal";

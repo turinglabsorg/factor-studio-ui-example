@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
-// @ts-ignore
-import { StudioProVault, StudioProVaultStats, VaultDeposit } from "@factordao/sdk-studio";
-// @ts-ignore
-import { ChainId } from "@factordao/sdk";
-// @ts-ignore
+import {
+  StudioProVault,
+  StudioProVaultStats,
+  VaultDeposit,
+} from "@factordao/sdk-studio";
+import { ChainId, valueToBigInt } from "@factordao/sdk";
 import {
   useSendTransaction,
   useAccount,
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
-// @ts-ignore
 import { erc20ABI } from "@factordao/contracts";
+import { Address } from "viem";
+import { arbitrum } from "wagmi/chains";
 
 interface ProDepositModalProps {
   positionAddress: string;
@@ -65,7 +67,8 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
       }
       const proVaultStats = new StudioProVaultStats({
         chainId: ChainId.ARBITRUM_ONE,
-        vaultAddress: positionAddress,
+        vaultAddress: positionAddress as Address,
+        environment: "testing",
       });
       const depositsByUser = await proVaultStats.getVaultDepositsByOwner(
         address
@@ -103,10 +106,12 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
   const handleAllowance = async () => {
     try {
       const allowance = await writeContractAsync({
-        address: tokenAddress,
+        address: tokenAddress as Address,
         abi: erc20ABI,
         functionName: "approve",
-        args: [positionAddress, amount],
+        chain: arbitrum,
+        account: address,
+        args: [positionAddress as Address, valueToBigInt(amount)],
       });
       console.log("Allowance transaction sent:", allowance);
 
@@ -166,10 +171,15 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
           <tbody>
             {userDeposits.map((deposit) => (
               <tr key={deposit.block}>
-                <td>{deposit.depositAsset.substring(0, 4)}...{deposit.depositAsset.substring(deposit.depositAsset.length - 3)}</td>
+                <td>
+                  {deposit.depositAsset.substring(0, 4)}...
+                  {deposit.depositAsset.substring(
+                    deposit.depositAsset.length - 3
+                  )}
+                </td>
                 <td>{deposit.assets}</td>
                 <td>{deposit.block}</td>
-                <td>{deposit.shares}</td> 
+                <td>{deposit.shares}</td>
               </tr>
             ))}
           </tbody>

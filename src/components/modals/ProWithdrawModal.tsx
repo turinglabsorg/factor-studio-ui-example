@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from "react";
-// @ts-ignore
 import { StudioProVault, StudioProVaultStats, VaultWithdraw } from "@factordao/sdk-studio";
-// @ts-ignore
 import { ChainId } from "@factordao/sdk";
-// @ts-ignore
 import {
   useSendTransaction,
   useAccount,
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { Address } from "viem";
-// @ts-ignore
 
 interface ProWithdrawModalProps {
   positionAddress: string;
@@ -49,7 +45,7 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
       setVaultData(JSON.stringify(vaultData, null, 2));
       const shares = await proVault.balanceOf(address);
       console.log("Shares:", shares);
-      setShares(shares);
+      setShares(shares.toString());
       const assets = [];
       for (const k in vaultData.financial.underlyingAssets) {
         assets.push(vaultData.financial.underlyingAssets[k].address);
@@ -59,9 +55,10 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
       }
       const proVaultStats = new StudioProVaultStats({
         chainId: ChainId.ARBITRUM_ONE,
-        vaultAddress: positionAddress,
+        vaultAddress: positionAddress as Address,
+        environment: "testing",
       });
-      const withdrawsByUser = await proVaultStats.getVaultWithrawalsByReceiver(
+      const withdrawsByUser = await proVaultStats.getVaultWithdrawalsByReceiver(
         address
       );
       console.log("Withdraws by user: ", withdrawsByUser);

@@ -1,9 +1,6 @@
 import React, { useState } from "react";
-// @ts-ignore
 import { StrategyBuilder } from "@factordao/sdk-studio";
-// @ts-ignore
 import { ChainId } from "@factordao/sdk";
-// @ts-ignore
 import { useSendTransaction } from "wagmi";
 
 interface WithdrawModalProps {

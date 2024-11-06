@@ -1,18 +1,14 @@
 import React, { useEffect, useState } from "react";
-// @ts-ignore
 import { ChainId } from "@factordao/sdk";
-// @ts-ignore
-import { StrategyBuilderVault } from "@factordao/sdk-studio";
-// @ts-ignore
+import { StrategyBuilderPosition, StrategyBuilderVault } from "@factordao/sdk-studio";
 import { useAccount } from "wagmi";
-// @ts-ignore
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import WithdrawModal from "./modals/WithdrawModal"; // Import the modal component
 
 const UserPositions: React.FC = () => {
   const { address, isConnected } = useAccount();
   const alchemyApiKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-  const [userPositions, setUserPositions] = useState<any[]>([]);
+  const [userPositions, setUserPositions] = useState<StrategyBuilderPosition[]>([]);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
 
   useEffect(() => {

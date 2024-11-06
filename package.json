@@ -10,9 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@factordao/contracts": "^1.3.8",
-    "@factordao/sdk": "^1.5.8",
-    "@factordao/sdk-studio": "^1.4.8",
+    "@factordao/contracts": "^1.3.10",
+    "@factordao/sdk": "^1.5.10",
+    "@factordao/sdk-studio": "^1.4.10",
     "@rainbow-me/rainbowkit": "^2.2.0",
     "@tanstack/react-query": "^5.59.15",
     "react": "^18.3.1",
