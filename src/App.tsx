@@ -4,7 +4,8 @@ import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import { arbitrum } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import UserPositions from "./components/UserPositions"; // Import the new component
+// import UserPositions from "./components/UserPositions";
+import ProVault from "./components/ProVault";
 
 const config = getDefaultConfig({
   appName: "Studio Examples",
@@ -20,7 +21,8 @@ function App() {
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
           <RainbowKitProvider>
-            <UserPositions />
+            {/* <UserPositions /> */}
+            <ProVault />
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>

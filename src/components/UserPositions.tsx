@@ -7,7 +7,7 @@ import { StrategyBuilderVault } from "@factordao/sdk-studio";
 import { useAccount } from "wagmi";
 // @ts-ignore
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import WithdrawModal from "./WithdrawModal"; // Import the modal component
+import WithdrawModal from "./modals/WithdrawModal"; // Import the modal component
 
 const UserPositions: React.FC = () => {
   const { address, isConnected } = useAccount();
