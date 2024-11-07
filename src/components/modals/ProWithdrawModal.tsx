@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { StudioProVault, StudioProVaultStats, VaultWithdraw } from "@factordao/sdk-studio";
+import { ERC20Helper, StudioProVault, StudioProVaultStats, VaultWithdraw } from "@factordao/sdk-studio";
 import { ChainId } from "@factordao/sdk";
 import {
   useSendTransaction,
   useAccount,
   useWaitForTransactionReceipt,
 } from "wagmi";
-import { Address } from "viem";
+import { Address, formatEther, formatUnits } from "viem";
 
 interface ProWithdrawModalProps {
   positionAddress: string;
   onClose: () => void;
+}
+
+export interface TokenMetadata {
+  symbol: string;
+  decimals: number;
 }
 
 const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
@@ -29,6 +34,7 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
   const [withdrawHash, setWithdrawHash] = useState<`0x${string}` | undefined>();
   const [isWaitingForWithdraw, setIsWaitingForWithdraw] = useState(false);
   const [userWithdraws, setUserWithdraws] = useState<VaultWithdraw[]>([]);
+  const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenMetadata>>({});
 
   const { data: withdrawReceipt } = useWaitForTransactionReceipt({
     hash: withdrawHash,
@@ -47,12 +53,30 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
       console.log("Shares:", shares);
       setShares(shares.toString());
       const assets = [];
+      const erc20Helper = new ERC20Helper(ChainId.ARBITRUM_ONE, alchemyApiKey);
+      const metadataTemp: Record<string, TokenMetadata> = {};
       for (const k in vaultData.financial.underlyingAssets) {
         assets.push(vaultData.financial.underlyingAssets[k].address);
         if (!tokenAddress) {
           setTokenAddress(vaultData.financial.underlyingAssets[k].address);
+          const metadata = await erc20Helper.getTokenMetadata(
+            vaultData.financial.underlyingAssets[k].address as Address
+          );
+          console.log(
+            "Token metadata for ",
+            vaultData.financial.underlyingAssets[k].address,
+            " is ",
+            metadata
+          );
+          metadataTemp[vaultData.financial.underlyingAssets[k].address.toLowerCase()] =
+            {
+              symbol: metadata.symbol,
+              decimals: metadata.decimals,
+            };
         }
       }
+      console.log("Metadata: ", metadataTemp);
+      setTokenMetadata(metadataTemp);
       const proVaultStats = new StudioProVaultStats({
         chainId: ChainId.ARBITRUM_ONE,
         vaultAddress: positionAddress as Address,
@@ -116,13 +140,12 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
         </span>
         <h2>Vault</h2>
         <pre>{vaultData}</pre>
-        <h3>User Shares: {shares.toString()}</h3>
+        <h3>User Shares: {formatEther(BigInt(shares))}</h3>
         <h3>User Withdraws</h3>
         <table className="deposit-table">
           <thead>
             <tr>
               <th>Asset</th>
-              <th>Amount</th>
               <th>Block</th>
               <th>Shares</th>
             </tr>
@@ -131,14 +154,11 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
             {userWithdraws.map((withdraw) => (
               <tr key={withdraw.block}>
                 <td>
-                  {withdraw.withdrawAsset.substring(0, 4)}...
-                  {withdraw.withdrawAsset.substring(
-                    withdraw.withdrawAsset.length - 3
-                  )}
+                  {formatUnits(BigInt(withdraw.assets), tokenMetadata[withdraw.withdrawAsset.toLowerCase()]?.decimals)}
+                  {" " + tokenMetadata[withdraw.withdrawAsset.toLowerCase()]?.symbol}
                 </td>
-                <td>{withdraw.assets}</td>
                 <td>{withdraw.block}</td>
-                <td>{withdraw.shares}</td>
+                <td>{formatEther(BigInt(withdraw.shares))}</td>
               </tr>
             ))}
           </tbody>
@@ -150,7 +170,7 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
         >
           {availableAssets.map((asset) => (
             <option key={asset} value={asset}>
-              {asset}
+              {asset} {" " + tokenMetadata[asset.toLowerCase()]?.symbol}
             </option>
           ))}
         </select>

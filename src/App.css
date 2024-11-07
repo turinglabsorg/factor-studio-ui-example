@@ -73,7 +73,8 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   color: black;
   width: 80%;
-  max-width: 500px;
+  max-width: 750px;
+  max-height: 80%;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -88,7 +89,8 @@ select {
 pre {
   width: 100%;
   height: 150px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   text-align: left;
 }
 

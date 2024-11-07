@@ -3,6 +3,7 @@ import {
   StudioProVault,
   StudioProVaultStats,
   VaultDeposit,
+  ERC20Helper,
 } from "@factordao/sdk-studio";
 import { ChainId, valueToBigInt } from "@factordao/sdk";
 import {
@@ -12,12 +13,16 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { erc20ABI } from "@factordao/contracts";
-import { Address } from "viem";
+import { Address, formatEther, formatUnits } from "viem";
 import { arbitrum } from "wagmi/chains";
 
 interface ProDepositModalProps {
   positionAddress: string;
   onClose: () => void;
+}
+export interface TokenMetadata {
+  symbol: string;
+  decimals: number;
 }
 
 const ProDepositModal: React.FC<ProDepositModalProps> = ({
@@ -29,7 +34,9 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
   const [tokenAddress, setTokenAddress] = useState("");
   const [vaultData, setVaultData] = useState<string | null>(null);
   const [availableAssets, setAvailableAssets] = useState<string[]>([]);
+
   const [amount, setAmount] = useState<string>("");
+  const [shares, setShares] = useState<string>("");
   const { sendTransactionAsync } = useSendTransaction();
   const { writeContractAsync } = useWriteContract();
 
@@ -40,6 +47,7 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
   const [isWaitingForAllowance, setIsWaitingForAllowance] = useState(false);
   const [isWaitingForDeposit, setIsWaitingForDeposit] = useState(false);
   const [userDeposits, setUserDeposits] = useState<VaultDeposit[]>([]);
+  const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenMetadata>>({});
 
   const { data: allowanceReceipt } = useWaitForTransactionReceipt({
     hash: allowanceHash,
@@ -57,14 +65,35 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
         vaultAddress: positionAddress,
       });
       const vaultData = await proVault.getVaultData();
+      const shares = await proVault.balanceOf(address);
+      console.log("Shares:", shares);
+      setShares(shares.toString());
       setVaultData(JSON.stringify(vaultData, null, 2));
       const assets = [];
+      const metadataTemp: Record<string, TokenMetadata> = {};
+      const erc20Helper = new ERC20Helper(ChainId.ARBITRUM_ONE, alchemyApiKey);
       for (const k in vaultData.financial.underlyingAssets) {
         assets.push(vaultData.financial.underlyingAssets[k].address);
         if (!tokenAddress) {
           setTokenAddress(vaultData.financial.underlyingAssets[k].address);
+          const metadata = await erc20Helper.getTokenMetadata(
+            vaultData.financial.underlyingAssets[k].address as Address
+          );
+          console.log(
+            "Token metadata for ",
+            vaultData.financial.underlyingAssets[k].address,
+            " is ",
+            metadata
+          );
+          metadataTemp[vaultData.financial.underlyingAssets[k].address.toLowerCase()] =
+            {
+              symbol: metadata.symbol,
+              decimals: metadata.decimals,
+            };
         }
       }
+      console.log("Metadata: ", metadataTemp);
+      setTokenMetadata(metadataTemp);
       const proVaultStats = new StudioProVaultStats({
         chainId: ChainId.ARBITRUM_ONE,
         vaultAddress: positionAddress as Address,
@@ -158,28 +187,25 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
         </span>
         <h2>Vault</h2>
         <pre>{vaultData}</pre>
+        <h3>User Shares: {formatEther(BigInt(shares))}</h3>
         <h3>User Deposits</h3>
         <table className="deposit-table">
           <thead>
             <tr>
               <th>Asset</th>
-              <th>Amount</th>
-              <th>Block</th>
               <th>Shares</th>
+              <th>Block</th>
             </tr>
           </thead>
           <tbody>
             {userDeposits.map((deposit) => (
               <tr key={deposit.block}>
                 <td>
-                  {deposit.depositAsset.substring(0, 4)}...
-                  {deposit.depositAsset.substring(
-                    deposit.depositAsset.length - 3
-                  )}
+                  {formatUnits(BigInt(deposit.assets), tokenMetadata[deposit.depositAsset.toLowerCase()]?.decimals)}
+                  {" " + tokenMetadata[deposit.depositAsset.toLowerCase()]?.symbol}
                 </td>
-                <td>{deposit.assets}</td>
+                <td>{formatEther(BigInt(deposit.shares))}</td>
                 <td>{deposit.block}</td>
-                <td>{deposit.shares}</td>
               </tr>
             ))}
           </tbody>
@@ -192,7 +218,7 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
         >
           {availableAssets.map((asset) => (
             <option key={asset} value={asset}>
-              {asset}
+              {asset} {" " + tokenMetadata[asset.toLowerCase()]?.symbol}
             </option>
           ))}
         </select>
