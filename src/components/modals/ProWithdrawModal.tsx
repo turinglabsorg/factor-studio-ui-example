@@ -35,6 +35,9 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
   const [isWaitingForWithdraw, setIsWaitingForWithdraw] = useState(false);
   const [userWithdraws, setUserWithdraws] = useState<VaultWithdraw[]>([]);
   const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenMetadata>>({});
+  const [vaultBalances, setVaultBalances] = useState<Record<string, string>>(
+    {}
+  );
 
   const { data: withdrawReceipt } = useWaitForTransactionReceipt({
     hash: withdrawHash,
@@ -86,6 +89,14 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
         address
       );
       console.log("Withdraws by user: ", withdrawsByUser);
+      const vaultBalancesTemp: Record<string, string> = {};
+      const vaultBalancesSubgraph = await proVaultStats.getVaultBalances();
+      console.log("Vault balances: ", vaultBalancesSubgraph);
+      for (const k in vaultBalancesSubgraph) {
+        vaultBalancesTemp[vaultBalancesSubgraph[k].token.toLowerCase()] =
+          vaultBalancesSubgraph[k].balance.toString();
+      }
+      setVaultBalances(vaultBalancesTemp);
       setUserWithdraws(withdrawsByUser);
       setAvailableAssets(assets);
     };
@@ -140,7 +151,14 @@ const ProWithdrawModal: React.FC<ProWithdrawModalProps> = ({
         </span>
         <h2>Vault</h2>
         <pre>{vaultData}</pre>
-        <h3>User Shares: {formatEther(BigInt(shares))}</h3>
+        <h2>Balances</h2>
+        {Object.keys(vaultBalances).map((k) => (
+          <div key={k}>
+            {tokenMetadata[k]?.symbol} :{" "}
+            {formatUnits(BigInt(vaultBalances[k]), tokenMetadata[k]?.decimals).toString()}
+          </div>
+        ))}
+        <h3>User Shares: {shares}</h3>
         <h3>User Withdraws</h3>
         <table className="deposit-table">
           <thead>

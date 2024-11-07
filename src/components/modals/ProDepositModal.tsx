@@ -47,7 +47,12 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
   const [isWaitingForAllowance, setIsWaitingForAllowance] = useState(false);
   const [isWaitingForDeposit, setIsWaitingForDeposit] = useState(false);
   const [userDeposits, setUserDeposits] = useState<VaultDeposit[]>([]);
-  const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenMetadata>>({});
+  const [tokenMetadata, setTokenMetadata] = useState<
+    Record<string, TokenMetadata>
+  >({});
+  const [vaultBalances, setVaultBalances] = useState<Record<string, string>>(
+    {}
+  );
 
   const { data: allowanceReceipt } = useWaitForTransactionReceipt({
     hash: allowanceHash,
@@ -85,11 +90,12 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
             " is ",
             metadata
           );
-          metadataTemp[vaultData.financial.underlyingAssets[k].address.toLowerCase()] =
-            {
-              symbol: metadata.symbol,
-              decimals: metadata.decimals,
-            };
+          metadataTemp[
+            vaultData.financial.underlyingAssets[k].address.toLowerCase()
+          ] = {
+            symbol: metadata.symbol,
+            decimals: metadata.decimals,
+          };
         }
       }
       console.log("Metadata: ", metadataTemp);
@@ -103,6 +109,14 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
         address
       );
       console.log("Deposits by user: ", depositsByUser);
+      const vaultBalancesTemp: Record<string, string> = {};
+      const vaultBalancesSubgraph = await proVaultStats.getVaultBalances();
+      console.log("Vault balances: ", vaultBalancesSubgraph);
+      for (const k in vaultBalancesSubgraph) {
+        vaultBalancesTemp[vaultBalancesSubgraph[k].token.toLowerCase()] =
+          vaultBalancesSubgraph[k].balance.toString();
+      }
+      setVaultBalances(vaultBalancesTemp);
       setUserDeposits(depositsByUser);
       setAvailableAssets(assets);
     };
@@ -187,6 +201,13 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
         </span>
         <h2>Vault</h2>
         <pre>{vaultData}</pre>
+        <h2>Balances</h2>
+        {Object.keys(vaultBalances).map((k) => (
+          <div key={k}>
+            {tokenMetadata[k]?.symbol} :{" "}
+            {formatUnits(BigInt(vaultBalances[k]), tokenMetadata[k]?.decimals).toString()}
+          </div>
+        ))}
         <h3>User Shares: {formatEther(BigInt(shares))}</h3>
         <h3>User Deposits</h3>
         <table className="deposit-table">
@@ -201,8 +222,12 @@ const ProDepositModal: React.FC<ProDepositModalProps> = ({
             {userDeposits.map((deposit) => (
               <tr key={deposit.block}>
                 <td>
-                  {formatUnits(BigInt(deposit.assets), tokenMetadata[deposit.depositAsset.toLowerCase()]?.decimals)}
-                  {" " + tokenMetadata[deposit.depositAsset.toLowerCase()]?.symbol}
+                  {formatUnits(
+                    BigInt(deposit.assets),
+                    tokenMetadata[deposit.depositAsset.toLowerCase()]?.decimals
+                  )}
+                  {" " +
+                    tokenMetadata[deposit.depositAsset.toLowerCase()]?.symbol}
                 </td>
                 <td>{formatEther(BigInt(deposit.shares))}</td>
                 <td>{deposit.block}</td>
